@@ -28,20 +28,22 @@ bytesize=7 )
 print("Communication on: {}".format(client))
 def mainFunc():
     try:
+        
+        startTime = time.time()
+        monitorTime = startTime + logFileTime
         resBuffer = []
-        client.write_register(address=85+4096, value=0, unit=1)
+        client.write_register(address=4096+85, value=0, unit=1)
         while client.connect():
-            result = client.read_holding_registers(address=85+4096,count=1,unit=1)
+            result = client.read_holding_registers(address=4096+85,count=1,unit=1)
             decoder = BinaryPayloadDecoder.fromRegisters(result.registers, Endian.Big, wordorder=Endian.Little)
             startSignal = decoder.decode_16bit_int()
             currentTime = time.time()
             if startSignal == 1:
-                
-                result = client.read_holding_registers(address=130+4096,count=70,unit=1)
+                result = client.read_holding_registers(address=4096+130,count=70,unit=1)
                 resBuffer.append(result.registers)
-                result = client.read_holding_registers(address=130+70+4096,count=70,unit=1)
+                result = client.read_holding_registers(address=4096+130+70,count=70,unit=1)
                 resBuffer.append(result.registers)
-                client.write_register(address=85+4096, value=0, unit=1)
+                client.write_register(address=4096+85, value=0, unit=1)
                 startSignal = 0
             if currentTime >= monitorTime:
                 name = input("Enter the File Name: ") 
@@ -83,7 +85,7 @@ while True:
     os.system('cls')
     if logAck == "yes":
         logFileTime = 0
-        varTemp = 5
+        varTemp = 3
         while logFileTime < varTemp: 
             try:   
                 logFileTime = int(input("Enter the time interval in sec to generate csv file: "))
@@ -91,7 +93,7 @@ while True:
                 print("Enter Valid Input")
                 logFileTime = int(input("Enter the time interval in sec to generate csv file: "))
             if logFileTime < varTemp:
-                print("The min value is 40 sec")
+                print("The min value is 3 sec")
         varTemp = 100
         maxWeight = 0
         while maxWeight < varTemp: 
@@ -111,26 +113,20 @@ while True:
                 print("Enter Valid Input")
                 minWeight = int(input("Enter the min weight for the trial in grams: "))
         input("Press Enter to start")
-        startTime = time.time()
-        monitorTime = startTime + logFileTime
         print("Log will be generated after %d sec for 2098 msec"% logFileTime)
         try:
-            client.write_register(address=86+4096, value=0, unit=1)
+            client.write_register(address=4096+86, value=0, unit=1)
             time.sleep(1)
-            client.write_register(address=86+4096, value=1, unit=1)
+            client.write_register(address=4096+86, value=1, unit=1)
             print (mainFunc())
         except:
             print("Log Fail. Check Plc Communication.")
 
     else:
-        print("Thank You")
+        print("Thank You!")
         break
 
 
 
         
         
-
-
-
-

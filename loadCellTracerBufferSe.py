@@ -38,7 +38,6 @@ def mainFunc():
             startSignal = decoder.decode_16bit_int()
             currentTime = time.time()
             if startSignal == 1:
-                
                 result = client.read_holding_registers(address=130,count=70,unit=1)
                 resBuffer.append(result.registers)
                 result = client.read_holding_registers(address=130+70,count=70,unit=1)
