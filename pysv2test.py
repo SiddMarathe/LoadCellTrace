@@ -16,11 +16,8 @@ print(client.connect())
 while client.connect():
     resNum = int(input('Enter res number: '))
     try:
-        start = datetime.
-        result = client.read_holding_registers(address=130+4096,count=70,unit=1)
-        resBuffer.append(result.registers)
-        result = client.read_holding_registers(address=130+70+4096,count=70,unit=1)
-        resBuffer.append(result.registers)
-        client.write_register(address=85+4096, value=0, unit=1)
+        result = client.read_holding_registers(address=resNum,count=100,unit=1)
+        print(result.registers)
+
     except:
         print(" Error ")

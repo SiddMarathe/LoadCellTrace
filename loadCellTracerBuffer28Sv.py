@@ -10,11 +10,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-os.chdir("c:")
-c = os.getcwd()
-neededPath = c+"Dashpot\\"+ str(RTC.RTC().date())
-if not os.path.isdir(neededPath): os.makedirs(neededPath)
-
+try:
+    os.chdir("c:")
+    c = os.getcwd()
+    neededPath = c+"Dashpot\\"+ str(RTC.RTC().date())
+    if not os.path.isdir(neededPath): os.makedirs(neededPath)
+except:
+    print("File system error.")
 
 filepath = neededPath+"\\"
 client = serialClient(
@@ -28,7 +30,6 @@ bytesize=7 )
 print("Communication on: {}".format(client))
 def mainFunc():
     try:
-        
         startTime = time.time()
         monitorTime = startTime + logFileTime
         resBuffer = []
@@ -39,9 +40,9 @@ def mainFunc():
             startSignal = decoder.decode_16bit_int()
             currentTime = time.time()
             if startSignal == 1:
-                result = client.read_holding_registers(address=4096+130,count=70,unit=1)
+                result = client.read_holding_registers(address=4096+100,count=70,unit=1)
                 resBuffer.append(result.registers)
-                result = client.read_holding_registers(address=4096+130+70,count=70,unit=1)
+                result = client.read_holding_registers(address=4096+100+70,count=70,unit=1)
                 resBuffer.append(result.registers)
                 client.write_register(address=4096+85, value=0, unit=1)
                 startSignal = 0
@@ -113,7 +114,7 @@ while True:
                 print("Enter Valid Input")
                 minWeight = int(input("Enter the min weight for the trial in grams: "))
         input("Press Enter to start")
-        print("Log will be generated after %d sec for 2098 msec"% logFileTime)
+        print("Log will be generated after %d sec"% logFileTime)
         try:
             client.write_register(address=4096+86, value=0, unit=1)
             time.sleep(1)
