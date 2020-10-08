@@ -46,7 +46,10 @@ def mainFunc():
                 resBuffer.append(result.registers)
                 client.write_register(address=4096+85, value=0, unit=1)
                 startSignal = 0
-            if currentTime >= monitorTime:
+            if currentTime >= monitorTime:            
+                result = client.read_holding_registers(address=4096+87,count=1,unit=1)
+                decoder = BinaryPayloadDecoder.fromRegisters(result.registers, Endian.Big, wordorder=Endian.Little)
+                TimeMes = decoder.decode_16bit_int()*100
                 name = input("Enter the File Name: ") 
                 if name == '': name = "Reading"
                 filename = "{2}-{3} {0} {1}.csv".format(name,str(RTC.RTC().date()),str(RTC.RTC().hour),str(RTC.RTC().minute))
@@ -58,8 +61,12 @@ def mainFunc():
                     for z in range(0,70,2):
                         decoder = BinaryPayloadDecoder.fromRegisters(resBuffer[i][z:z+3], Endian.Big, wordorder=Endian.Little)
                         fltBuffer.append(decoder.decode_32bit_float())
+                        TempSingleSampleTime = 0
+                        SingleSampleTime = 0                        
                 for o in range(len(fltBuffer)):
-                    ex_data=[RTC.RTC().date(),o*2,fltBuffer[o]]
+                    TempSingleSampleTime = SingleSampleTime + TempSingleSampleTime 
+                    SingleSampleTime = TimeMes/len(fltBuffer)
+                    ex_data=[RTC.RTC().date(),TempSingleSampleTime,fltBuffer[o]]
                     # print(ex_data)
                     ex_headers=['Date','ms','Weight']
                     ex_jalvis.append_excel(ex_data,ex_headers)
@@ -67,12 +74,12 @@ def mainFunc():
         feedBack = "Log successfull."
         print("Close the graph window for next reading!\n thank you.")
         plt.figure(num="Graph", figsize=(13, 6), edgecolor='red', facecolor='grey', frameon =True)
-        plt.plot([i*2 for i in range(len(fltBuffer))],fltBuffer)
+        plt.plot([i*SingleSampleTime for i in range(len(fltBuffer))],fltBuffer)        
         plt.xlabel('Time in ms')
         plt.ylabel('Weight in g')
         plt.title('Load cell Graph')
         plt.yscale('linear')
-        plt.axis([0, 2150, minWeight, maxWeight])
+        plt.axis([0, TimeMes, minWeight, maxWeight])
         # plt.yticks([yVal for yVal in range(0,maxWeight,int(maxWeight/20))],rotation=0)
         plt.grid(True)
         plt.show()

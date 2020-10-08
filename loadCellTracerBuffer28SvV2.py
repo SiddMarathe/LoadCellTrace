@@ -10,11 +10,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 
-os.chdir("c:")
-c = os.getcwd()
-neededPath = c+"Dashpot\\"+ str(RTC.RTC().date())
-if not os.path.isdir(neededPath): os.makedirs(neededPath)
-
+try:
+    os.chdir("c:")
+    c = os.getcwd()
+    neededPath = c+"Dashpot\\"+ str(RTC.RTC().date())
+    if not os.path.isdir(neededPath): os.makedirs(neededPath)
+except:
+    print("File system error.")
 
 filepath = neededPath+"\\"
 client = serialClient(
@@ -31,53 +33,39 @@ def mainFunc():
         startTime = time.time()
         monitorTime = startTime + logFileTime
         resBuffer = []
-        client.write_register(address=85, value=0, unit=1)
+        client.write_register(address=4096+85, value=0, unit=1)
+        fltBuffer = []
+        logFileTimemm = logFileTime * 1000
+        TempSingleSampleTime = 0
+        SingleSampleTime = 0
         while client.connect():
-            result = client.read_holding_registers(address=85,count=1,unit=1)
-            decoder = BinaryPayloadDecoder.fromRegisters(result.registers, Endian.Big, wordorder=Endian.Little)
-            startSignal = decoder.decode_16bit_int()
             currentTime = time.time()
-            if startSignal == 1:
-                result = client.read_holding_registers(address=100,count=70,unit=1)
-                resBuffer.append(result.registers)
-                result = client.read_holding_registers(address=100+70,count=70,unit=1)
-                resBuffer.append(result.registers)
-                client.write_register(address=85, value=0, unit=1)
-                startSignal = 0
+            result = client.read_holding_registers(address=4096+10,count=3,unit=1)
+            decoder = BinaryPayloadDecoder.fromRegisters(result.registers, Endian.Big, wordorder=Endian.Little)
+            fltBuffer.append(decoder.decode_32bit_float())
             if currentTime >= monitorTime:
-                result = client.read_holding_registers(address=87,count=1,unit=1)
-                decoder = BinaryPayloadDecoder.fromRegisters(result.registers, Endian.Big, wordorder=Endian.Little)
-                TimeMes = decoder.decode_16bit_int()
+                SingleSampleTime = logFileTimemm/len(fltBuffer)
                 name = input("Enter the File Name: ") 
                 if name == '': name = "Reading"
                 filename = "{2}-{3} {0} {1}.csv".format(name,str(RTC.RTC().date()),str(RTC.RTC().hour),str(RTC.RTC().minute))
                 ex_jalvis = excel.excel_edit(filepath,filename)
                 ex_headers=['Date','ms','Weight']
-                ex_jalvis.write_excel_header(ex_headers)     
-                fltBuffer = []
-                for i in range(len(resBuffer)):
-                    for z in range(0,70,2):
-                        decoder = BinaryPayloadDecoder.fromRegisters(resBuffer[i][z:z+3], Endian.Big, wordorder=Endian.Little)
-                        fltBuffer.append(decoder.decode_32bit_float())
-                        TempSingleSampleTime = 0
-                        SingleSampleTime = 0
+                ex_jalvis.write_excel_header(ex_headers)                                                      
                 for o in range(len(fltBuffer)):
-                    TempSingleSampleTime = SingleSampleTime + TempSingleSampleTime 
-                    SingleSampleTime = TimeMes/len(fltBuffer)
+                    TempSingleSampleTime = SingleSampleTime + TempSingleSampleTime
                     ex_data=[RTC.RTC().date(),TempSingleSampleTime,fltBuffer[o]]
-                    # print(ex_data)
                     ex_headers=['Date','ms','Weight']
                     ex_jalvis.append_excel(ex_data,ex_headers)
                 break      
         feedBack = "Log successfull."
-        print("Close tnhe graph window for next reading!\n thank you.")
+        print("Close the graph window for next reading!\n thank you.")
         plt.figure(num="Graph", figsize=(13, 6), edgecolor='red', facecolor='grey', frameon =True)
-        plt.plot([i*SingleSampleTime for i in range(len(fltBuffer))],fltBuffer)
+        plt.plot([i*SingleSampleTime for i in range(len(fltBuffer))],fltBuffer)        
         plt.xlabel('Time in ms')
         plt.ylabel('Weight in g')
         plt.title('Load cell Graph')
         plt.yscale('linear')
-        plt.axis([0, TimeMes, minWeight, maxWeight])
+        plt.axis([0, logFileTimemm, minWeight, maxWeight])
         # plt.yticks([yVal for yVal in range(0,maxWeight,int(maxWeight/20))],rotation=0)
         plt.grid(True)
         plt.show()
@@ -119,11 +107,11 @@ while True:
                 print("Enter Valid Input")
                 minWeight = int(input("Enter the min weight for the trial in grams: "))
         input("Press Enter to start")
-        print("Log will be generated after %d sec for 2098 msec"% logFileTime)
+        print("Log will be generated after %d sec"% logFileTime)
         try:
-            client.write_register(address=86, value=0, unit=1)
+            client.write_register(address=4096+86, value=0, unit=1)
             time.sleep(1)
-            client.write_register(address=86, value=1, unit=1)
+            client.write_register(address=4096+86, value=1, unit=1)
             print (mainFunc())
         except:
             print("Log Fail. Check Plc Communication.")
@@ -136,7 +124,3 @@ while True:
 
         
         
-
-
-
-
